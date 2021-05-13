@@ -10,7 +10,7 @@ export default {
     component: AcmDataListForm,
 }
 
-export const InlineCopy = () => {
+export const DataListForm = () => {
     return (
         <Card>
             <CardBody>
