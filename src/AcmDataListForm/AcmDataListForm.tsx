@@ -18,7 +18,7 @@ import { AcmDropdown } from '../AcmDropdown'
 import { AcmTextInput } from '../AcmTextInput/AcmTextInput'
 import AddIcon from '@patternfly/react-icons/dist/js/icons/add-circle-o-icon'
 
-const dropdownItems = [{ id: 'delete data-item', text: 'Delete' }]
+const dropdownItems = [{ id: 'delete-data-item', text: 'Delete' }]
 
 /* TODO:
     - validation
@@ -28,8 +28,12 @@ const dropdownItems = [{ id: 'delete data-item', text: 'Delete' }]
 */
 export function AcmDataListForm() {
     const [jobInput, setJobInput] = useState('')
-    const [jobList, setJobList] = useState<Array<string>>([])
-
+    const [jobList, setJobList] = useState<Array<string>>(['test1', 'test2'])
+    const [id, setId] = useState('')
+    const [itemOrder, setItemOrder] = useState<Array<string>>(['data0', 'data1'])
+    const onDragStart = (id) => {
+        setId(id)
+    }
     return (
         <Fragment>
             <InputGroup>
@@ -55,6 +59,7 @@ export function AcmDataListForm() {
                     aria-label="search button for search input"
                     onClick={() => {
                         const newJobArray = [...jobList, jobInput]
+                        const newItemOrder = [...itemOrder, `data${itemOrder.length+1}`]
                         setJobList(newJobArray)
                         setJobInput('')
                     }}
@@ -62,9 +67,18 @@ export function AcmDataListForm() {
                     <AddIcon />
                 </Button>
             </InputGroup>
-            {jobList.map((job) => (
-                <DataList aria-label="list-1">
-                    <DataListItem>
+            <DataList
+                isCompact
+                aria-label="list-1"
+                itemOrder={jobList}
+                onDragFinish={(itemOrder) => {
+                    setItemOrder(jobList)
+                    console.log('itemOrder: ', itemOrder)
+                }}
+                onDragStart={onDragStart}
+            >
+                {jobList.map((job, index) => (
+                    <DataListItem aria-labelledby={`simple-item-${index}`} id={job} key={`${index}`}>
                         <DataListItemRow>
                             <DataListControl>
                                 <DataListDragButton
@@ -72,14 +86,12 @@ export function AcmDataListForm() {
                                     aria-labelledby="simple-item1"
                                     aria-describedby="Press space or enter to begin dragging, and use the arrow keys to navigate up or down. Press enter to confirm the drag, or any other key to cancel the drag operation."
                                     aria-pressed="false"
-                                    isDisabled
                                 />
-                                <DataListCheck aria-labelledby="simple-item1" name="check1" otherControls />
                             </DataListControl>
                             <DataListItemCells
                                 dataListCells={[
-                                    <DataListCell key="item1">
-                                        <span id="simple-item1">{job}</span>
+                                    <DataListCell key={index}>
+                                        <span id={`simple-item-${index}`}>{job}</span>
                                     </DataListCell>,
                                 ]}
                             />
@@ -88,7 +100,12 @@ export function AcmDataListForm() {
                                     isDisabled={false}
                                     tooltip=""
                                     id="dropdown"
-                                    onSelect={() => {}}
+                                    onSelect={(id) => {
+                                        console.log('check id: ', job)
+                                        const newData = jobList.filter((item)=>job != item)
+                                        setJobList(newData)
+                                        console.log('check jobs: ', newData)
+                                    }}
                                     text=""
                                     dropdownItems={dropdownItems}
                                     isKebab={true}
@@ -98,8 +115,8 @@ export function AcmDataListForm() {
                             </div>
                         </DataListItemRow>
                     </DataListItem>
-                </DataList>
-            ))}
+                ))}
+            </DataList>
         </Fragment>
     )
 }
