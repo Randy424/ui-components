@@ -20,6 +20,7 @@ import {
     ToolbarContent,
     ToolbarGroup,
     ToolbarItem,
+    Tooltip,
 } from '@patternfly/react-core'
 import CaretDownIcon from '@patternfly/react-icons/dist/js/icons/caret-down-icon'
 import {
@@ -98,6 +99,8 @@ export interface IAcmTableAction {
 export interface IAcmRowAction<T> {
     /** Action identifier */
     id: string
+    /** Display a tooltip for this action */
+    tooltip?: string
     /** Inject a separator horizontal rule immediately before an action */
     addSeparator?: boolean
     /** Display an action as being disabled */
@@ -215,6 +218,7 @@ export interface AcmTableProps<T> {
     search?: string
     setSearch?: (search: string) => void
     searchPlaceholder?: string
+    initialSort?: ISortBy | undefined
     sort?: ISortBy | undefined
     setSort?: (sort: ISortBy | undefined) => void
     showToolbar?: boolean
@@ -222,6 +226,7 @@ export interface AcmTableProps<T> {
     perPageOptions?: PerPageOptions[]
     autoHidePagination?: boolean
     noBorders?: boolean
+    fuseThreshold?: number
 }
 export function AcmTable<T>(props: AcmTableProps<T>) {
     const {
@@ -243,11 +248,12 @@ export function AcmTable<T>(props: AcmTableProps<T>) {
         index: sortIndexOffset,
         direction: SortByDirection.asc,
     }
+    const initialSort = props.initialSort || defaultSort
 
     // State that is only stored in the component state
     const [selected, setSelected] = useState<{ [uid: string]: boolean }>({})
     const [actionsOpen, setActionsOpen] = useState(false)
-    const [preFilterSort, setPreFilterSort] = useState<ISortBy | undefined>(defaultSort)
+    const [preFilterSort, setPreFilterSort] = useState<ISortBy | undefined>(initialSort)
     const [expanded, setExpanded] = useState<{ [uid: string]: boolean }>({})
     const [openGroups, setOpenGroups] = useState<{ [key: string]: boolean }>({})
 
@@ -265,7 +271,7 @@ export function AcmTable<T>(props: AcmTableProps<T>) {
     const search = props.search || stateSearch
     const setSearch = props.setSearch || stateSetSearch
     const searchPlaceholder = props.searchPlaceholder || 'Search'
-    const [stateSort, stateSetSort] = useState<ISortBy | undefined>(defaultSort)
+    const [stateSort, stateSetSort] = useState<ISortBy | undefined>(initialSort)
     const sort = props.sort || stateSort
     const setSort = props.setSort || stateSetSort
 
@@ -372,10 +378,14 @@ export function AcmTable<T>(props: AcmTableProps<T>) {
         filtered: ITableItem<T>[]
         filteredCount: number
     }>(() => {
+        let threshold = 0.3
+        if (props.fuseThreshold != undefined) {
+            threshold = props.fuseThreshold
+        }
         if (search && search !== '') {
             const fuse = new Fuse(tableItems, {
                 ignoreLocation: true,
-                threshold: 0.3,
+                threshold: threshold,
                 keys: columns
                     .map((column, i) => (column.search ? `column-${i}` : undefined))
                     .filter((value) => value !== undefined) as string[],
@@ -627,21 +637,58 @@ export function AcmTable<T>(props: AcmTableProps<T>) {
                     isSeparator: true,
                 })
             }
-            // Add row action
-            actions.push({
-                title: action.title,
-                onClick: (_event: React.MouseEvent, rowId: number, rowData: IRowData) => {
-                    if (groupFn || addSubRows) {
-                        const tableItem =
-                            rowData.props?.key && paged.find((tableItem) => tableItem.key === rowData.props.key)
-                        if (tableItem) {
-                            action.click(tableItem.item)
+            // Add row action with tooltip
+            if (action.tooltip) {
+                actions.push({
+                    title: (
+                        <Tooltip content={action.tooltip} zIndex={10001} position={'left'}>
+                            <AcmButton
+                                isDisabled={action.isDisabled}
+                                variant={ButtonVariant.plain}
+                                isInline={true}
+                                className={'tooltiped-action-wrapper'}
+                                style={{
+                                    padding: 0,
+                                    cursor: action.isDisabled ? 'not-allowed' : 'pointer',
+                                }}
+                            >
+                                {action.title}
+                            </AcmButton>
+                        </Tooltip>
+                    ),
+                    onClick: action.isDisabled
+                        ? undefined
+                        : (_event: React.MouseEvent, rowId: number, rowData: IRowData) => {
+                              if (groupFn || addSubRows) {
+                                  const tableItem =
+                                      rowData.props?.key &&
+                                      paged.find((tableItem) => tableItem.key === rowData.props.key)
+                                  if (tableItem) {
+                                      action.click(tableItem.item)
+                                  }
+                              } else {
+                                  action.click(paged[rowId].item)
+                              }
+                          },
+                })
+            } else {
+                // Add generic row action
+                actions.push({
+                    title: action.title,
+                    isDisabled: action.isDisabled ? true : false,
+                    onClick: (_event: React.MouseEvent, rowId: number, rowData: IRowData) => {
+                        if (groupFn || addSubRows) {
+                            const tableItem =
+                                rowData.props?.key && paged.find((tableItem) => tableItem.key === rowData.props.key)
+                            if (tableItem) {
+                                action.click(tableItem.item)
+                            }
+                        } else {
+                            action.click(paged[rowId].item)
                         }
-                    } else {
-                        action.click(paged[rowId].item)
-                    }
-                },
-            })
+                    },
+                })
+            }
         })
         return actions
     }
