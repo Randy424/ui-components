@@ -14,16 +14,25 @@ import {
     InputGroup,
     TextInput,
 } from '@patternfly/react-core'
-import { AcmDropdown } from '../AcmDropdown'
-import { AcmTextInput } from '../AcmTextInput/AcmTextInput'
-import AddIcon from '@patternfly/react-icons/dist/js/icons/add-circle-o-icon'
+import { PlusIcon, MinusIcon } from '@patternfly/react-icons'
+import { makeStyles } from '@material-ui/styles'
 
 const dropdownItems = [{ id: 'delete-data-item', text: 'Delete' }]
+const useStyles = makeStyles({
+    minusIcon: {
+        fill: 'var(--pf-c-button--m-control--Color)',
+    },
+    buttonCell: {
+        marginTop: '0px',
+    },
+    cell: {
+        padding: '0px 0px 0px 0px',
+    },
+})
 
 /* TODO:
     - validation
-    - delete
-    - reordering
+    - expose list order
     - *make pretty*
 */
 export function AcmDataListForm() {
@@ -34,6 +43,7 @@ export function AcmDataListForm() {
     const onDragStart = (id) => {
         setId(id)
     }
+    const classes = useStyles()
     return (
         <Fragment>
             <InputGroup>
@@ -59,14 +69,15 @@ export function AcmDataListForm() {
                     aria-label="search button for search input"
                     onClick={() => {
                         const newJobArray = [...jobList, jobInput]
-                        const newItemOrder = [...itemOrder, `data${itemOrder.length+1}`]
+                        const newItemOrder = [...itemOrder, `data${itemOrder.length + 1}`]
                         setJobList(newJobArray)
                         setJobInput('')
                     }}
                 >
-                    <AddIcon />
+                    <PlusIcon />
                 </Button>
             </InputGroup>
+            <div style={{ marginBottom: '20px' }}></div>
             <DataList
                 isCompact
                 aria-label="list-1"
@@ -93,26 +104,21 @@ export function AcmDataListForm() {
                                     <DataListCell key={index}>
                                         <span id={`simple-item-${index}`}>{job}</span>
                                     </DataListCell>,
+                                    <DataListCell key={index}></DataListCell>,
                                 ]}
                             />
-                            <div style={{ alignSelf: 'center' }}>
-                                <AcmDropdown
-                                    isDisabled={false}
-                                    tooltip=""
-                                    id="dropdown"
-                                    onSelect={(id) => {
-                                        console.log('check id: ', job)
-                                        const newData = jobList.filter((item)=>job != item)
-                                        setJobList(newData)
-                                        console.log('check jobs: ', newData)
-                                    }}
-                                    text=""
-                                    dropdownItems={dropdownItems}
-                                    isKebab={true}
-                                    isPlain={true}
-                                    isPrimary={true}
-                                ></AcmDropdown>
-                            </div>
+                            <Button
+                                isSmall
+                                variant="link"
+                                onClick={(id) => {
+                                    console.log('check id: ', job)
+                                    const newData = jobList.filter((item) => job != item)
+                                    setJobList(newData)
+                                    console.log('check jobs: ', newData)
+                                }}
+                            >
+                                <MinusIcon className={classes.minusIcon} />
+                            </Button>
                         </DataListItemRow>
                     </DataListItem>
                 ))}
